@@ -364,26 +364,13 @@ body {
       <div class="dia-prog" id="inicio-prog">Cargando...</div>
     </div>
   </div>
-  <div class="kpi-grid">
-    <div class="kpi-card kpi-cumple">
-      <div class="kpi-value" id="kpi-cumple">—</div>
-      <div class="kpi-label">✓ Cumple</div>
-    </div>
-    <div class="kpi-card kpi-nc">
-      <div class="kpi-value" id="kpi-nc">—</div>
-      <div class="kpi-label">✗ No Cumple</div>
-    </div>
-    <div class="kpi-card kpi-pend">
-      <div class="kpi-value" id="kpi-pend">—</div>
-      <div class="kpi-label">Pendientes</div>
-    </div>
-  </div>
   <button class="btn-nuevo" onclick="irA('s-subarea')">INICIAR REGISTRO</button>
 </div>
 
 <!-- S-SUBAREA -->
 <div class="screen" id="s-subarea">
   <div id="steps-subarea"></div>
+  <button class="btn-volver" onclick="irA('s-inicio')">← Inicio</button>
   <div class="screen-title">SELECCIONAR SUBÁREA</div>
   <div class="fecha-selector" id="fecha-selector"></div>
   <div class="subarea-grid" id="subarea-grid"></div>
