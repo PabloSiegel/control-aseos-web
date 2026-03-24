@@ -105,31 +105,42 @@ body {
 .step-item.done   .step-label { color: var(--verde); }
 .inicio-title {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 34px; color: var(--rojo); margin-bottom: 4px; letter-spacing: 1px;
+  font-size: 38px; color: var(--rojo); margin-bottom: 2px; letter-spacing: 2px; text-align: center;
 }
-.inicio-subtitle { font-size: 14px; color: var(--gris); margin-bottom: 24px; }
-.kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+.inicio-planta { font-size: 13px; color: var(--gris); text-align: center; margin-bottom: 22px; letter-spacing: 0.5px; }
+.dia-card {
+  background: var(--panel); border-radius: 16px; padding: 18px 20px;
+  border: 1px solid var(--borde); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.dia-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--naranja); flex-shrink: 0; }
+.dia-info {}
+.dia-name { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--blanco); letter-spacing: 1px; line-height: 1; }
+.dia-prog { font-size: 13px; color: var(--gris); margin-top: 2px; }
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 22px; }
 .kpi-card {
-  background: var(--panel); border-radius: 14px; padding: 18px 10px;
+  background: var(--panel); border-radius: 14px; padding: 16px 8px;
   text-align: center; border: 1px solid var(--borde);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 .kpi-value {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 40px; line-height: 1; margin-bottom: 4px;
+  font-size: 38px; line-height: 1; margin-bottom: 4px;
 }
-.kpi-label { font-size: 11px; color: var(--gris); text-transform: uppercase; letter-spacing: 0.5px; }
+.kpi-label { font-size: 10px; color: var(--gris); text-transform: uppercase; letter-spacing: 0.5px; }
 .kpi-total  .kpi-value { color: var(--rojo); }
 .kpi-cumple .kpi-value { color: var(--verde); }
 .kpi-nc     .kpi-value { color: #E53935; }
+.kpi-pend   .kpi-value { color: var(--naranja); }
 .btn-nuevo {
   display: block; width: 100%; padding: 20px;
-  background: var(--rojo); color: white; border: none; border-radius: 16px;
+  background: var(--naranja); color: white; border: none; border-radius: 16px;
   font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 2px;
   cursor: pointer; transition: background 0.2s, transform 0.1s;
-  box-shadow: 0 4px 18px rgba(0,48,135,0.3);
+  box-shadow: 0 4px 18px rgba(244,121,32,0.35);
 }
-.btn-nuevo:active { transform: scale(0.98); background: var(--rojo-dark); }
+.btn-nuevo:active { transform: scale(0.98); background: var(--naranja-dark); }
 .screen-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 24px; color: var(--rojo); margin-bottom: 16px; letter-spacing: 1px;
@@ -345,18 +356,29 @@ body {
 <!-- S-INICIO -->
 <div class="screen active" id="s-inicio">
   <div class="inicio-title">CONTROL DE ASEOS</div>
-  <div class="inicio-subtitle" id="inicio-fecha">Cargando...</div>
-  <div class="kpi-grid">
-    <div class="kpi-card kpi-total">
-      <div class="kpi-value" id="kpi-total">—</div>
-      <div class="kpi-label">Registros hoy</div>
-    </div>
-    <div class="kpi-card kpi-nc" style="grid-column:span 2">
-      <div class="kpi-value" id="kpi-nc">—</div>
-      <div class="kpi-label">No Cumple hoy</div>
+  <div class="inicio-planta">Planta Elaborados &mdash; Gesti&oacute;n de Limpieza</div>
+  <div class="dia-card">
+    <div class="dia-dot"></div>
+    <div class="dia-info">
+      <div class="dia-name" id="inicio-dia">---</div>
+      <div class="dia-prog" id="inicio-prog">Cargando...</div>
     </div>
   </div>
-  <button class="btn-nuevo" onclick="irA('s-subarea')">+ NUEVO REGISTRO</button>
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-cumple">
+      <div class="kpi-value" id="kpi-cumple">—</div>
+      <div class="kpi-label">✓ Cumple</div>
+    </div>
+    <div class="kpi-card kpi-nc">
+      <div class="kpi-value" id="kpi-nc">—</div>
+      <div class="kpi-label">✗ No Cumple</div>
+    </div>
+    <div class="kpi-card kpi-pend">
+      <div class="kpi-value" id="kpi-pend">—</div>
+      <div class="kpi-label">Pendientes</div>
+    </div>
+  </div>
+  <button class="btn-nuevo" onclick="irA('s-subarea')">INICIAR REGISTRO</button>
 </div>
 
 <!-- S-SUBAREA -->
@@ -528,23 +550,35 @@ function renderSteps(ai, cid) {
 // ═══ S-INICIO ════════════════════════════════════════════════════════════════
 function renderInicio() {
   const d = new Date();
-  document.getElementById('inicio-fecha').textContent = DIA_LABEL[d.getDay()]+', '+todayStr();
+  const today = todayStr();
+  const todayItems = aseosParaFecha(today);
+  const totalProg = todayItems.length;
+
+  // Day card
+  document.getElementById('inicio-dia').textContent = DIA_LABEL[d.getDay()].toUpperCase();
+  document.getElementById('inicio-prog').textContent = totalProg + ' aseos programados hoy';
+
   fetch('/api/dashboard')
     .then(r => r.json())
     .then(data => {
       const r = data.registros || [];
-      const today = todayStr();
-      // Build locked pairs (any fecha+subarea with at least one record)
+      // Build locked pairs
       state.lockedPairs = new Set(r.map(x=>x.fecha+'|'+x.subarea));
-      // KPIs show today only
+      // Today only for KPIs
       const todayRecs = r.filter(x=>x.fecha===today);
-      const subareas = new Set(todayRecs.map(x=>x.subarea)).size;
+      // Subareas revisadas hoy (con al menos 1 registro)
+      const subasRevisadas = new Set(todayRecs.map(x=>x.subarea));
+      // Items ya registrados (en subareas revisadas)
+      const itemsRegistrados = todayItems.filter(a=>subasRevisadas.has(a[0])).length;
+      const cumple = todayRecs.filter(x=>x.estado==='Conforme'||x.cumple).length;
       const nc = todayRecs.filter(x=>x.nocumple).length;
-      document.getElementById('kpi-total').textContent = subareas || todayRecs.length;
-      document.getElementById('kpi-nc').textContent    = nc;
+      const pendientes = Math.max(0, totalProg - itemsRegistrados);
+      document.getElementById('kpi-cumple').textContent = cumple;
+      document.getElementById('kpi-nc').textContent     = nc;
+      document.getElementById('kpi-pend').textContent   = pendientes;
     })
     .catch(() => {
-      ['kpi-total','kpi-nc'].forEach(id => document.getElementById(id).textContent = '\u2014');
+      ['kpi-cumple','kpi-nc','kpi-pend'].forEach(id => document.getElementById(id).textContent = '—');
     });
 }
 
