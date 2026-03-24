@@ -175,6 +175,17 @@ body {
 .obs-input-wrap { padding:6px 12px 10px 48px; margin-top:-8px; }
 .obs-input { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--borde); border-radius:8px; font-size:14px; background:#fff8f8; }
 .obs-input:focus { outline:none; border-color:#E53935; }
+.tipo-select { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--borde); border-radius:8px; font-size:14px; background:#fff8f8; margin-bottom:6px; color:var(--blanco); }
+.tipo-select:focus { outline:none; border-color:#E53935; }
+.fecha-selector { display:flex; gap:8px; margin-bottom:16px; overflow-x:auto; padding-bottom:6px; scrollbar-width:none; }
+.fecha-selector::-webkit-scrollbar { display:none; }
+.fecha-chip { padding:9px 14px; border-radius:20px; border:2px solid var(--borde); background:var(--panel); color:var(--blanco); font-size:13px; font-weight:500; white-space:nowrap; cursor:pointer; transition:all 0.2s; }
+.fecha-chip.active { background:var(--rojo); border-color:var(--rojo); color:white; }
+.btn-volver { background:none; border:none; color:var(--rojo); font-size:14px; font-weight:600; cursor:pointer; padding:4px 0 10px 0; display:inline-flex; align-items:center; gap:4px; }
+.subarea-card.locked { opacity:0.45; cursor:not-allowed; background:var(--panel2); }
+.subarea-card.locked .subarea-arrow { display:none; }
+.lock-badge { font-size:12px; color:var(--verde); background:#d9ead3; border-radius:10px; padding:2px 8px; font-weight:700; }
+.fecha-label { font-size:12px; color:var(--naranja); font-weight:600; margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
 .comp-check {
   width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--borde);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s;
@@ -352,13 +363,16 @@ body {
 <div class="screen" id="s-subarea">
   <div id="steps-subarea"></div>
   <div class="screen-title">SELECCIONAR SUBÁREA</div>
+  <div class="fecha-selector" id="fecha-selector"></div>
   <div class="subarea-grid" id="subarea-grid"></div>
 </div>
 
 <!-- S-COMPONENTES -->
 <div class="screen" id="s-componentes">
   <div id="steps-componentes"></div>
+  <button class="btn-volver" onclick="irA('s-subarea')">← Volver</button>
   <div class="screen-title" id="comp-title">COMPONENTES</div>
+  <div class="fecha-label" id="comp-fecha-label"></div>
   <div class="zona-filter" id="zona-filter"></div>
   <div class="comp-header">
     <span class="comp-count" id="comp-count"></span>
@@ -398,7 +412,9 @@ body {
 <!-- S-CONFIRMAR -->
 <div class="screen" id="s-confirmar">
   <div id="steps-confirmar"></div>
+  <button class="btn-volver" onclick="irA('s-componentes')">← Volver</button>
   <div class="screen-title">CONFIRMAR REGISTRO</div>
+  <div class="fecha-label" id="conf-fecha-label"></div>
   <div class="confirmar-kpi">
     <div class="confirmar-card">
       <div class="confirmar-num" style="color:var(--azul)"  id="conf-total">0</div>
@@ -435,7 +451,8 @@ const screens = ['s-inicio','s-subarea','s-componentes','s-cumplimiento','s-conf
 const ASEOS = [["Hamburguesas", "Linea", "Sala general", "Cielo", "jueves"], ["Hamburguesas", "Linea", "Sala general", "Paredes", "jueves"], ["Hamburguesas", "Linea", "Sala general", "Puertas", "jueves"], ["Hamburguesas", "Linea", "Sala general", "Volteador de Bins", "jueves"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Mesón de carga", "miercoles"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Bandeja de goteo", "miercoles"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Lamas entrada y salida", "miercoles"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Mesón rechazo", "miercoles"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Estructura interna", "miercoles"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Cinta salida analizadora", "miercoles"], ["Hamburguesas", "Linea", "Analizadora Rayos X", "Estructura externa", "miercoles"], ["Hamburguesas", "Linea", "Detector de Metales", "Cinta alimentadora trituradora", "miercoles"], ["Hamburguesas", "Linea", "Detector de Metales", "Polines cinta", "miercoles"], ["Hamburguesas", "Linea", "Detector de Metales", "Estructura cinta", "miercoles"], ["Hamburguesas", "Linea", "Detector de Metales", "Rodillos", "miercoles"], ["Hamburguesas", "Linea", "Detector de Metales", "Bandeja de goteo", "miercoles"], ["Hamburguesas", "Linea", "Detector de Metales", "Equipo detector", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Estructura interior", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Estructura exterior", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Rosco", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Precortador", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Rejillas", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Anillos", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Cruzetas", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Cinta salida trituradora", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Estructura cinta trituradora", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Cinta elevadora", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Bandeja de goteo", "miercoles"], ["Hamburguesas", "Linea", "Trituradora", "Estructura cinta elevadora", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Estructura interior", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Estructura exterior", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Carros transportadores", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Rosco 1", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Rosco 2", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Precortador", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Rejillas", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Cuchillo gigante", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Cruzetas", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Tuercas", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Flujómetro", "miercoles"], ["Hamburguesas", "Linea", "Mezcladora", "Elevador de carros", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Cinta alimentadora", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Polines cinta alimentadora", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Bandeja de goteo", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Estructura interior", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Estructura exterior", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Cinta transportadora túnel IQF", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Estructura cinta", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Rosco 1", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Rosco 2", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Tuercas", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Moldes", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Copas", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Guías de molde", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Placas de aireación", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Bomba de alimentación", "miercoles"], ["Hamburguesas", "Linea", "Formadora", "Carro porta implementos Novamax", "miercoles"], ["Hamburguesas", "IQF envasado", "Sala general", "Cielo", "miercoles"], ["Hamburguesas", "IQF envasado", "Sala general", "Paredes", "miercoles"], ["Hamburguesas", "IQF envasado", "Sala general", "Puertas", "miercoles"], ["Hamburguesas", "IQF envasado", "Sala general", "Basureros", "lunes-sabado"], ["Hamburguesas", "IQF envasado", "Sala general", "Escaleras", "lunes-sabado"], ["Hamburguesas", "IQF envasado", "Sala general", "Tarimas", "lunes-sabado"], ["Hamburguesas", "IQF envasado", "Sala general", "Bateas de decomiso", "lunes-sabado"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Cinta metálica", "jueves"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Estructura túnel", "jueves"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Cargador Curvo", "jueves"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Paredes", "jueves"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Sistema de lavado automatizado", "jueves"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Cielo", "jueves"], ["Hamburguesas", "IQF envasado", "Túnel IQF Línea Hamburguesa N° 5", "Piso", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Caida túnel IQF 5", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Cinta de ordenador automático", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Cinta de aceleración ordenador automático", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Estructura de ordenador automático a Ulma", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Polines de ordenador automático Ulma", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Bandejas de goteo", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Lamas caida túnel IQF 5", "jueves"], ["Hamburguesas", "IQF envasado", "Sala envasado Hamburguesas", "Caida de cinta ordenador a cinta aceleración", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Apiladora Hamburguesas", "Cinta alimentadora maquina apiladora hamburguesas", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Apiladora Hamburguesas", "Estructura de cinta", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Apiladora Hamburguesas", "Cinta maquina apiladora Hamburguesas", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Apiladora Hamburguesas", "Guías y rodillos apiladores", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Apiladora Hamburguesas", "Canoas acumuladoras", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Apiladora Hamburguesas", "Estructura maquina apiladora", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº3", "Canoa acumuladora de producto", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº3", "Cadena transportadora producto (Eslabones)", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº3", "Tapas Laterales Cadena Trasportadora", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº3", "Estructura máquina Ulma", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº3", "Cinta alimentacion /cinta pivote rayos X", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº3", "Estructura de cintas de alimentación RX", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº4", "Canoa acumuladora de producto", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº4", "Canoa acumuladora de producto de 185gr", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº4", "Cadena transportadora producto (Eslabones)", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº4", "Tapas Laterales Cadena Trasportadora", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº4", "Estructura máquina Ulma", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº4", "Cinta alimentacion rayos X", "jueves"], ["Hamburguesas", "IQF envasado", "Maquina Selladora Ulma Atlanta  N° 5", "Canoa acumuladora de producto", "jueves"], ["Hamburguesas", "IQF envasado", "Maquina Selladora Ulma Atlanta  N° 5", "Canoa acumuladora de producto de 185gr", "jueves"], ["Hamburguesas", "IQF envasado", "Maquina Selladora Ulma Atlanta  N° 5", "Cadena transportadora producto (Eslabones)", "jueves"], ["Hamburguesas", "IQF envasado", "Maquina Selladora Ulma Atlanta  N° 5", "Tapas Laterales Cadena Trasportadora", "jueves"], ["Hamburguesas", "IQF envasado", "Maquina Selladora Ulma Atlanta  N° 5", "Estructura máquina selladora", "jueves"], ["Hamburguesas", "IQF envasado", "Maquina Selladora Ulma Atlanta  N° 5", "Cinta alimentacion rayos X", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº6", "Canoa acumuladora de producto", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº6", "Cadena transportadora producto (Eslabones)", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº6", "Tapas Laterales Cadena Trasportadora", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº6", "Estructura máquina selladora", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº6", "Cinta alimentacion rayos X", "jueves"], ["Hamburguesas", "IQF envasado", "Máquina Selladora Ulma Atlanta Nº6", "Canoa acumuladora de producto de 185gr", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Cielo", "miercoles"], ["Hamburguesas", "Palletizado", "Sala general", "Desagües", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Rejillas", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Paredes", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Puertas", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Escaleras", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Tarimas", "jueves"], ["Hamburguesas", "Palletizado", "Sala general", "Mesón de polines", "miercoles"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta Equipo Rx", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Estructura de cinta Equipo Rx", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Estructura Equipo de Rx", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta de retorno de producto", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Detector de metales", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta de detector de metal", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Estructura de cinta detector de metales", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Caida retorno de producto", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta aceleradora Ulma 3-6", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta aceleradora Ulma 4", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta aceleradora Ulma 5", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Robots Deltapack 1-2-3", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Estructura Robot Deltapack 1-2-3", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta interior Hamburguesa Robot Deltapack 1-2-3", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta transportadora caja y salida Robot Deltapack 1-2-3", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Troncales caja llena Robot Deltapack 1-2-3", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Equipo selladora 3M", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta chequeador de peso", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta rechazo chequeador de peso", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Equipo Detector de metales", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta detector de metales", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta Roller salida detector de metales", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta Acelerador a robot Palletizador, conteo de cajas", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Cinta Roller Robot Palletizador.", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Robot palletizador", "jueves"], ["Hamburguesas", "Palletizado", "Equipo robotizado de Hamburguesas", "Polines salida pallet 1 (hamburguesas)", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Estructura Armador de Caja", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Cinta salida armador de caja (hamburguesas)", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Troncales de cajas vacias a deltapack 1-2-3", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Cinta transportadora de bolsas", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Estructura de cinta transportadora", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Huincha Calefactora", "jueves"], ["Hamburguesas", "Palletizado", "Armador de cajas", "Estructura maquina selladora", "jueves"], ["Hamburguesas", "Palletizado", "Maquina selladora globalpack", "Cinta transportadora de bolsas", "jueves"], ["Hamburguesas", "Palletizado", "Maquina selladora globalpack", "Estructura de cinta transportadora", "jueves"], ["Hamburguesas", "Palletizado", "Maquina selladora globalpack", "Huincha Calefactora", "jueves"], ["Hamburguesas", "Palletizado", "Maquina selladora globalpack", "Estructura maquina selladora", "jueves"], ["Empanizado", "Linea", "Sala general", "Cielo", "jueves"], ["Empanizado", "Linea", "Sala general", "Paredes", "jueves"], ["Empanizado", "Linea", "Sala general", "Puertas", "jueves"], ["Empanizado", "Linea", "Sala general", "Escaleras", "lunes-sabado"], ["Empanizado", "Linea", "Sala general", "Carros porta moldes", "miercoles"], ["Empanizado", "Linea", "Sala general", "Estante porta emisores", "miercoles"], ["Empanizado", "Linea", "Sala general", "Tableros electricos", "miercoles"], ["Empanizado", "Linea", "Sala general", "Botoneras-enchufes", "miercoles"], ["Empanizado", "Linea", "Detector de Metales", "Cinta detector de metales", "jueves"], ["Empanizado", "Linea", "Detector de Metales", "Detector de metales", "jueves"], ["Empanizado", "Linea", "Detector de Metales", "Yantales laterales", "jueves"], ["Empanizado", "Linea", "Detector de Metales", "Malla de proteción", "jueves"], ["Empanizado", "Linea", "Detector de Metales", "Bandeja de goteo", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Carro porta piezas", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Rosco interior maquina", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Cruz de apoyo", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Anillo separador", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Rejilla 16 mm", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Precortador", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Cuchillo 4 alas", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Rosco Elevador sin fin", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Tapas rosco elevador", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Ruedas rosco elevador sin fin", "jueves"], ["Empanizado", "Linea", "Máquina Moledora", "Estructura Rosco elevador", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Rosco salida", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Anillos", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Extractor de cartilago", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Rejillas maquinas", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Tecle elevador de piezas.", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Carro porta piezas", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Elevador de carros", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 1", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Rosco salida", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Anillos", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Extractor de cartilago", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Rejillas maquinas", "jueves"], ["Empanizado", "Linea", "Máquina Mezcladora Nª 2", "Cruz de apoyo", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Cinta salida mezcladoras", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Estructura cinta salida mezcladora", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Cinta elevadora", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Polines de cintas", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Estructura cinta elevadora", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Cinta abastecedora de formadoras", "jueves"], ["Empanizado", "Linea", "Cintas sanitarias", "Estructura cinta abastecedora de multiformers", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 1", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 1", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 1", "Cinta de máquina multiformers", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 1", "Martillo prensador", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 1", "Porta martillo", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 1", "Boquillas aireación (Codos)", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 2", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 2", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 2", "Cinta de máquina multiformers", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 2", "Martillo prensador", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 2", "Porta martillo", "jueves"], ["Empanizado", "Linea", "Máquinas Multiformers 2", "Boquillas aireación (Codos)", "jueves"], ["Empanizado", "Linea", "Soplador", "Teflones", "jueves"], ["Empanizado", "Linea", "Soplador", "Cinta transportadora", "jueves"], ["Empanizado", "Linea", "Soplador", "Estructura máquina", "jueves"], ["Empanizado", "Linea", "Soplador", "Bandeja de goteo", "jueves"], ["Empanizado", "Linea", "Estanque batido", "Estructura interior estanque batido", "jueves"], ["Empanizado", "Linea", "Estanque batido", "Cinta transportadora batido", "jueves"], ["Empanizado", "Linea", "Estanque batido", "Estructura exterior estanque batido", "jueves"], ["Empanizado", "Linea", "Estanque batido", "Ductos del estanque", "jueves"], ["Empanizado", "Linea", "Estanque batido", "Ruedas del estanque batido", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Cinta transportadora producto", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Cinta Harnero superior-inferior", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Rosco interior", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Soplador", "jueves"], ["Empanizado", "Linea", "Máquina Harinadora", "Ruedas", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Estructura interior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Estructura exterior máquina", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Roscos laterales", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Tapas", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Sopladores-lamas", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Ruedas", "jueves"], ["Empanizado", "Linea", "Máquina Empanizadora", "Rodillo máquina empanizadora", "jueves"], ["Empanizado", "Linea", "Linea Producción Pechuga Sin Empanizar", "Volteador de Bins.", "jueves"], ["Empanizado", "Linea", "Linea Producción Pechuga Sin Empanizar", "Cinta elevadora", "jueves"], ["Empanizado", "Linea", "Linea Producción Pechuga Sin Empanizar", "Estructura Cinta Elevadora.", "jueves"], ["Empanizado", "Linea", "Linea Producción Pechuga Sin Empanizar", "Chute de traspaso.", "jueves"], ["Empanizado", "Linea", "Linea Producción Pechuga Sin Empanizar", "Cinta Ordenadora Manual", "jueves"], ["Empanizado", "Linea", "Linea Producción Pechuga Sin Empanizar", "Estructura Cinta Ordenadora Manual", "jueves"], ["Empanizado", "Linea", "Máquina Freidora", "Cinta movil de entrada a freidora", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Estructura interior máquina", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Estructura exterior máquina", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Vibrador salida freidora", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Estructura estanques de aceite", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Cinta superior - inferior freidora", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Serpentín de aceite termico", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Bandeja goteo de aceite", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Tecles de freidora", "miercoles"], ["Empanizado", "Linea", "Máquina Freidora", "Rota filtro", "miercoles"], ["Empanizado", "Linea", "Cinta Transportadora", "Cinta transportadora a Horno", "jueves"], ["Empanizado", "Palletizado", "Sala general", "Cielo", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Piso", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Desagües", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Rejillas", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Paredes", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Puertas", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Lavamanos", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Basureros", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Escaleras", "miercoles"], ["Empanizado", "Palletizado", "Sala general", "Tarimas", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cintas trans. de producto (Flow Pack)  a deltapack 5", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cintas transportadoras de producto (bolsa) a deltapack 4", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Deltapack 4-5", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta interna Deltapack 4-5", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta salida deltapack 4-5", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Polines de troncales", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta entrada maquina 3M", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Maquina selladora 3M", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta roller salida 3M", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta chequeador de peso", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta entrada a robot palletizador", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta de empacado manual", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Cinta de cajas empacado manual", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Mesones línea empacado manual", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Maquina selladora 3M", "miercoles"], ["Empanizado", "Palletizado", "Equipo Robotizado Empanizado", "Estructura de troncales", "miercoles"], ["Empanizado", "Palletizado", "Robot palletizador", "Estructura Robot Palletizador", "miercoles"], ["Empanizado", "Palletizado", "Robot palletizador", "Cintas interior de Robot", "miercoles"], ["Empanizado", "Palletizado", "Robot palletizador", "Cinta interior lateral de Robot", "miercoles"], ["Empanizado", "Palletizado", "Robot palletizador", "Polines salida de Robot Palletizador", "miercoles"], ["Empanizado", "Palletizado", "Robot palletizador", "Cinta Trasportadora Palletizado Empanizado", "miercoles"], ["Empanizado", "Palletizado", "Maquina armador de cajas", "Estructura armador de cajas", "miercoles"], ["Empanizado", "Palletizado", "Maquina armador de cajas", "Cinta de salida armador de cajas empanozado", "miercoles"], ["Empanizado", "Palletizado", "Maquina armador de cajas", "Cinta Polines a deltapack 5 y 6", "miercoles"], ["Empanizado", "Palletizado", "Embalador de pallets", "Estructura embalador", "miercoles"], ["Cocidos", "Linea", "Sala general", "Cielo", "miercoles"], ["Cocidos", "Linea", "Sala general", "Desagües", "sabado"], ["Cocidos", "Linea", "Sala general", "Rejillas", "sabado"], ["Cocidos", "Linea", "Sala general", "Paredes", "sabado"], ["Cocidos", "Linea", "Sala general", "Puertas", "sabado"], ["Cocidos", "Linea", "Sala general", "Escaleras", "miercoles"], ["Cocidos", "Linea", "Sala general", "Tarimas", "miercoles"], ["Cocidos", "Linea", "Sala Horno cocidos", "Cinta metalica", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Puertas horno", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Estructura interna", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Paredes externas horno", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Estructura cinta salida", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Cinta corta salida de horno", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Vibrador", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Estructura vibrador", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Cinta metalica hacia IQF", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Estructura sistema CIP", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Estructura sistema de lavado automatizado", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Bandejas", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Motores", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Tablero, enchufes, paradas de emergencia", "jueves"], ["Cocidos", "Linea", "Sala Horno cocidos", "Esclusa Sanitaria", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea Empanizados N° 6 cocidos", "Cinta metálica", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea Empanizados N° 6 cocidos", "Estructura interna túnel", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea Empanizados N° 6 cocidos", "Paredes externas túnel", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea Empanizados N° 6 cocidos", "Sistema de lavado automatizado", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea Empanizados N° 6 cocidos", "Tablero, enchufes, paradas de emergencia", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea N° 7", "Cinta metálica", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea N° 7", "Estructura interna túnel", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea N° 7", "Paredes externas túnel", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea N° 7", "Sistema de lavado automatizado", "jueves"], ["Cocidos", "Linea", "Túnel IQF Línea N° 7", "Tablero, enchufes, paradas de emergencia", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Caida de salida tunel N°6", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta ascendente salida túnel IQF", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta Alimentadora vibrador", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Vibrador máquina Bilwinco", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Multicabezal Bilwinco", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Bakets", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Canales de vibración", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Chutes de alimentación a cono dosificador.", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cono dosificador.", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Conos envasadores", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Estructura máquina envasadora Ulma vertical", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Chute de rechazo a bandejas", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Chute de rechazo a cinta", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta de rechazo", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta vertical de retorno de producto", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Tapas de cinta vertical de retorno de produto", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta Alimentadora vibrador retorno de producto", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Bandejas de goteo", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Estructura de cintas", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cintas trasportadora de producto post envasadora", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Chequeador de peso", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta equipo RX 28", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Estructura equipo RX 28", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta de rechazo RX 28", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta vibradora", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cintas transportadoras de producto a empaque", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Porta bandejas", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta descendente alimentadora a detector 26", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta alimentadora a detector 26", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta de detector de metal 26", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Estructura detector de metal 26", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta thermodrive post detector 26", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta thermodrive alimentadora Ulma 1", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta thermodrive alimentadora Ulma 2", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Teflones cinta alminetadora Ulma 1 y 2", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Estructura de cintas", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Polines de cintas", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Motores", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Botoneras, enchufes, paradas de emergencia envasado", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Estructura estante de Herramientas", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Máquina Selladora", "jueves"], ["Cocidos", "Linea", "Sala envasado empanizado cocidos", "Cinta Máquina Selladora.", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Canoa acumuladora de producto Croquetas", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Canoa acumuladora de producto Crocantes", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Tapas Laterales Cadena Trasportadora", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Palas transportadoras de producto (Eslabones)", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Estructura Rodillo de Sellado / Mordaza", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Estructura máquina Ulma", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Cinta salida Ulma", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Estructura equipo RX", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Cinta equipo RX", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Sistema de rechazo RX", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº1 cocidos", "Cinta Transportadora a Delta Pack 5", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Canoa acumuladora de producto Croquetas", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Canoa acumuladora de producto Crocantes", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Tapas Laterales Cadena Trasportadora", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Palas transportadoras de producto (Eslabones)", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Estructura Rodillo de Sellado / Mordaza", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Estructura máquina Ulma", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Cinta salida Ulma", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Estructura equipo RX", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Cinta equipo RX", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Sistema de rechazo RX", "jueves"], ["Cocidos", "Linea", "Máquina Selladora Ulma Atlanta Nº2 cocidos", "Cinta Transportadora a Delta Pack 4", "jueves"]];
 
 // ═══ STATE ═══════════════════════════════════════════════════════════════════
-let state = { subarea:null, compSelIdx:[], cumplResults:{}, cumplCursor:0, obsText:'', zonaFiltro:'Todos' };
+let state = { subarea:null, compSelIdx:[], cumplResults:{}, tipoNC:{}, cumplCursor:0, obsText:'', zonaFiltro:'Todos', fecha:null, lockedPairs:new Set() };
+state.fecha = todayStr();
 
 // ═══ HELPERS ═════════════════════════════════════════════════════════════════
 function todayStr() {
@@ -451,6 +468,17 @@ function diasDelRegistro(dia) {
 function aseosDeHoy() {
   const hoy = new Date().getDay();
   return ASEOS.filter(a => diasDelRegistro(a[4]).includes(hoy));
+}
+function aseosParaFecha(fechaStr) {
+  const p = fechaStr.split('-');
+  const d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+  return ASEOS.filter(a => diasDelRegistro(a[4]).includes(d.getDay()));
+}
+function fechaLabel(fechaStr) {
+  const p = fechaStr.split('-');
+  const d = new Date(parseInt(p[0]), parseInt(p[1])-1, parseInt(p[2]));
+  const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return DIA_LABEL[d.getDay()]+' '+d.getDate()+' '+meses[d.getMonth()];
 }
 
 // ═══ TOAST ═══════════════════════════════════════════════════════════════════
@@ -505,10 +533,14 @@ function renderInicio() {
     .then(r => r.json())
     .then(data => {
       const r = data.registros || [];
-      // Agrupar por subarea para contar registros únicos del día
-      const subareas = new Set(r.map(x=>x.subarea)).size;
-      const nc = r.filter(x=>x.nocumple).length;
-      document.getElementById('kpi-total').textContent = subareas || r.length;
+      const today = todayStr();
+      // Build locked pairs (any fecha+subarea with at least one record)
+      state.lockedPairs = new Set(r.map(x=>x.fecha+'|'+x.subarea));
+      // KPIs show today only
+      const todayRecs = r.filter(x=>x.fecha===today);
+      const subareas = new Set(todayRecs.map(x=>x.subarea)).size;
+      const nc = todayRecs.filter(x=>x.nocumple).length;
+      document.getElementById('kpi-total').textContent = subareas || todayRecs.length;
       document.getElementById('kpi-nc').textContent    = nc;
     })
     .catch(() => {
@@ -521,37 +553,70 @@ function renderSubareas() {
   renderSteps(0,'steps-subarea');
   const colors = {'Hamburguesas':'#D01030','Empanizado':'#FF6B35','Cocidos':'#0080FF'};
   const icons  = {'Hamburguesas':'\ud83c\udf54','Empanizado':'\ud83c\udf57','Cocidos':'\ud83d\udd25'};
-  const hoy = aseosDeHoy();
-  const subs = [...new Set(hoy.map(a=>a[0]))];
+
+  // ── Date chips (hoy / ayer / anteayer) ───────────────────────────────────
+  const today = todayStr();
+  const datechips = [];
+  for (let i = 0; i <= 2; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const ds = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    const lbl = i===0 ? 'Hoy — '+fechaLabel(ds) : i===1 ? 'Ayer — '+fechaLabel(ds) : 'Anteayer — '+fechaLabel(ds);
+    datechips.push({ds, lbl});
+  }
+  let fhd = '';
+  datechips.forEach(({ds,lbl}) => {
+    const cls = ds===state.fecha ? 'active' : '';
+    fhd += '<div class="fecha-chip '+cls+'" onclick="selFecha(\''+ds+'\')">'+lbl+'</div>';
+  });
+  document.getElementById('fecha-selector').innerHTML = fhd;
+
+  // ── Subarea cards ─────────────────────────────────────────────────────────
+  const items = aseosParaFecha(state.fecha);
+  const subs = [...new Set(items.map(a=>a[0]))];
   let h = '';
   subs.forEach(sub => {
-    const cnt   = hoy.filter(a=>a[0]===sub).length;
+    const cnt   = items.filter(a=>a[0]===sub).length;
     const color = colors[sub]||'#888';
     const icon  = icons[sub]||'\ud83c\udfed';
-    h += '<div class="subarea-card" onclick="selSubarea(\''+sub+'\')" style="border-left:5px solid '+color+'">'
-       + '<div class="subarea-icon">'+icon+'</div>'
-       + '<div class="subarea-info"><div class="subarea-name" style="color:'+color+'">'+sub+'</div>'
-       + '<div class="subarea-count">'+cnt+' componentes hoy</div></div>'
-       + '<div class="subarea-arrow">&rsaquo;</div></div>';
+    const locked = state.lockedPairs.has(state.fecha+'|'+sub);
+    if (locked) {
+      h += '<div class="subarea-card locked" style="border-left:5px solid '+color+'">'
+         + '<div class="subarea-icon">'+icon+'</div>'
+         + '<div class="subarea-info"><div class="subarea-name" style="color:'+color+'">'+sub+'</div>'
+         + '<div class="subarea-count">'+cnt+' componentes</div></div>'
+         + '<div class="lock-badge">\u2713 Revisado</div></div>';
+    } else {
+      h += '<div class="subarea-card" onclick="selSubarea(\''+sub+'\')" style="border-left:5px solid '+color+'">'
+         + '<div class="subarea-icon">'+icon+'</div>'
+         + '<div class="subarea-info"><div class="subarea-name" style="color:'+color+'">'+sub+'</div>'
+         + '<div class="subarea-count">'+cnt+' componentes</div></div>'
+         + '<div class="subarea-arrow">&rsaquo;</div></div>';
+    }
   });
-  if (!h) h = '<div style="text-align:center;padding:40px;color:var(--gris)">No hay aseos programados para hoy.</div>';
+  if (!h) h = '<div style="text-align:center;padding:40px;color:var(--gris)">No hay aseos programados para este día.</div>';
   document.getElementById('subarea-grid').innerHTML = h;
 }
+function selFecha(f) {
+  state.fecha = f;
+  renderSubareas();
+}
 function selSubarea(sub) {
-  state.subarea=sub; state.compSelIdx=[]; state.cumplResults={}; state.cumplCursor=0; state.obsText=''; state.zonaFiltro='Todos';
+  if (state.lockedPairs.has(state.fecha+'|'+sub)) return;
+  state.subarea=sub; state.compSelIdx=[]; state.cumplResults={}; state.tipoNC={}; state.cumplCursor=0; state.obsText=''; state.zonaFiltro='Todos';
   irA('s-componentes');
 }
 
 // ═══ S-COMPONENTES ═══════════════════════════════════════════════════════════
 function renderComponentes() {
   renderSteps(1,'steps-componentes');
-  const hoy = aseosDeHoy().filter(a=>a[0]===state.subarea);
+  const items = aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
   document.getElementById('comp-title').textContent = 'MARCAR NO CUMPLE \u2014 '+state.subarea.toUpperCase();
-  const zonas = ['Todos',...new Set(hoy.map(a=>a[2]))];
+  document.getElementById('comp-fecha-label').textContent = 'Fecha: '+fechaLabel(state.fecha);
+  const zonas = ['Todos',...new Set(items.map(a=>a[2]))];
   let fh = '';
   zonas.forEach(z => {
     const cls  = z===state.zonaFiltro?'active':'';
-    const safe = z.replace(/'/g,"\\'");
+    const safe = z.replace(/'/g,"\'");
     fh += '<div class="zona-chip '+cls+'" onclick="selZona(\''+safe+'\')">'+z+'</div>';
   });
   document.getElementById('zona-filter').innerHTML = fh;
@@ -559,7 +624,7 @@ function renderComponentes() {
 }
 function selZona(zona) { state.zonaFiltro=zona; renderComponentes(); }
 function selAll() {
-  const hoy = aseosDeHoy().filter(a=>a[0]===state.subarea);
+  const hoy = aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
   const fil = state.zonaFiltro==='Todos'?hoy:hoy.filter(a=>a[2]===state.zonaFiltro);
   const allIdx = fil.map(item=>hoy.indexOf(item));
   const allSel = allIdx.every(i=>state.compSelIdx.includes(i));
@@ -568,11 +633,11 @@ function selAll() {
   renderComps();
 }
 function renderComps() {
-  const hoy = aseosDeHoy().filter(a=>a[0]===state.subarea);
-  const fil = state.zonaFiltro==='Todos'?hoy:hoy.filter(a=>a[2]===state.zonaFiltro);
+  const items = aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
+  const fil = state.zonaFiltro==='Todos'?items:items.filter(a=>a[2]===state.zonaFiltro);
   let h = '';
   fil.forEach(item => {
-    const idx = hoy.indexOf(item);
+    const idx = items.indexOf(item);
     const sel = state.compSelIdx.includes(idx);
     const res = state.cumplResults[idx];
     h += '<div class="comp-item '+(sel?'selected':'')+'" onclick="toggleComp('+idx+')">'
@@ -581,8 +646,15 @@ function renderComps() {
        + '<div class="nc-badge">No Cumple</div>'
        + '</div>';
     if (sel) {
-      const obsVal = (res && res.obs) ? res.obs.replace(/"/g,'&quot;') : '';
-      h += '<div class="obs-input-wrap"><input class="obs-input" type="text" placeholder="Observaci\u00f3n (opcional)" value="'+obsVal+'" oninput="updateObs('+idx+',this.value)" onclick="event.stopPropagation()"/></div>';
+      const tipoVal = state.tipoNC[idx] || '';
+      const obsVal  = (res && res.obs) ? res.obs.replace(/"/g,'&quot;') : '';
+      const tipoOpts = ['Suciedad visible','Restos org\u00e1nicos','Humedad','Residuos qu\u00edmicos','Mal olor','Otros'];
+      let optHtml = '<option value="">-- Tipo de hallazgo --</option>';
+      tipoOpts.forEach(o => { optHtml += '<option value="'+o+'"'+(tipoVal===o?' selected':'')+'>'+o+'</option>'; });
+      h += '<div class="obs-input-wrap">'
+         + '<select class="tipo-select" onchange="updateTipo('+idx+',this.value)" onclick="event.stopPropagation()">'+optHtml+'</select>'
+         + '<input class="obs-input" type="text" placeholder="Observaci\u00f3n (opcional)" value="'+obsVal+'" oninput="updateObs('+idx+',this.value)" onclick="event.stopPropagation()"/>'
+         + '</div>';
     }
   });
   document.getElementById('comp-list').innerHTML = h;
@@ -591,15 +663,20 @@ function renderComps() {
     ? '\u26a0\ufe0f '+nc+' no cumplimiento'+(nc>1?'s':'')+' marcado'+(nc>1?'s':'')
     : '\u2705 Toca un componente para marcarlo como No Cumple';
 }
+
 function updateObs(idx, val) {
   if (!state.cumplResults[idx]) state.cumplResults[idx] = {estado:'No Cumple', obs:''};
   state.cumplResults[idx].obs = val;
+}
+function updateTipo(idx, val) {
+  state.tipoNC[idx] = val;
 }
 function toggleComp(idx) {
   const i = state.compSelIdx.indexOf(idx);
   if (i >= 0) {
     state.compSelIdx.splice(i, 1);
     delete state.cumplResults[idx];
+    delete state.tipoNC[idx];
   } else {
     state.compSelIdx.push(idx);
     state.cumplResults[idx] = {estado:'No Cumple', obs:''};
@@ -613,7 +690,7 @@ function iniciarCumplimiento() {
 // ═══ S-CUMPLIMIENTO ══════════════════════════════════════════════════════════
 function showCompCumpl() {
   renderSteps(2,'steps-cumplimiento');
-  const hoy  = aseosDeHoy().filter(a=>a[0]===state.subarea);
+  const hoy  = aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
   const sel  = state.compSelIdx.slice().sort((a,b)=>a-b);
   const cur  = state.cumplCursor;
   const item = hoy[sel[cur]];
@@ -693,18 +770,21 @@ function updateObsDisplay() {
 // ═══ S-CONFIRMAR ═════════════════════════════════════════════════════════════
 function renderConfirmar() {
   renderSteps(3,'steps-confirmar');
-  const hoy=aseosDeHoy().filter(a=>a[0]===state.subarea);
+  const items=aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
+  document.getElementById('conf-fecha-label').textContent='Fecha: '+fechaLabel(state.fecha);
   const sel=state.compSelIdx.slice().sort((a,b)=>a-b);
   let nc=0, h='';
   sel.forEach(idx=>{
-    const item=hoy[idx]; const res=state.cumplResults[idx];
+    const item=items[idx]; const res=state.cumplResults[idx];
     if(!item||!res) return;
     nc++;
+    const tipo=state.tipoNC[idx]||'';
+    const obsText=(tipo?tipo+(res.obs?': '+res.obs:''):(res.obs||''));
     h+='<div class="confirmar-item nocumple">'
       +'<div class="confirmar-item-info">'
       +'<div class="confirmar-item-zona">'+item[2]+'</div>'
       +'<div class="confirmar-item-comp">'+item[3]+'</div>'
-      +(res.obs?'<div class="confirmar-item-obs">&ldquo;'+res.obs+'&rdquo;</div>':'')
+      +(obsText?'<div class="confirmar-item-obs">&ldquo;'+obsText+'&rdquo;</div>':'')
       +'</div>'
       +'<div class="badge badge-nc">No Cumple</div>'
       +'</div>';
@@ -714,29 +794,32 @@ function renderConfirmar() {
      +'<div style="font-size:3rem;margin-bottom:8px">\u2705</div>'
      +'<strong>Sin No Cumplimientos</strong><br>Todo cumple en '+state.subarea+'</div>';
   }
-  document.getElementById('conf-total').textContent=hoy.length;
+  document.getElementById('conf-total').textContent=items.length;
   document.getElementById('conf-nc').textContent=nc;
   document.getElementById('confirmar-list').innerHTML=h;
 }
 
 // ═══ GUARDAR ═════════════════════════════════════════════════════════════════
 function guardar() {
-  const hoy=aseosDeHoy().filter(a=>a[0]===state.subarea);
+  const items=aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
   const sel=state.compSelIdx.slice().sort((a,b)=>a-b);
-  // Si no hay no-cumplimientos, registrar igual con 0 no cumple para historial
   const detalle=sel.map(idx=>{
-    const item=hoy[idx]; const res=state.cumplResults[idx];
-    return { subarea:item[0], zona:item[2], componente:item[3], estado:'No Cumple', obs:res?(res.obs||''):'' };
+    const item=items[idx]; const res=state.cumplResults[idx];
+    const tipo=state.tipoNC[idx]||'';
+    const obsCompleta=tipo?(tipo+(res&&res.obs?': '+res.obs:'')):(res?(res.obs||''):'');
+    return { subarea:item[0], zona:item[2], componente:item[3], estado:'No Cumple', obs:obsCompleta };
   });
+  // Si no hay NC, guardar fila "Conforme" para marcar la subarea como revisada
+  if (detalle.length===0) {
+    detalle.push({ subarea:state.subarea, zona:'', componente:'(Sin no cumplimientos)', estado:'Conforme', obs:'' });
+  }
   const now=new Date();
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
-  const data={ fecha:todayStr(), hora:hh+':'+mm, dia:DIA_LABEL[now.getDay()], total:hoy.length, cumple:hoy.length-sel.length, nocumple:sel.length, detalle };
-  if (detalle.length===0) {
-    // Nada que guardar, ir directo a éxito
-    irA('s-exito');
-    return;
-  }
+  // Use the fecha from state (may be today, yesterday or day-before)
+  const p=state.fecha.split('-');
+  const fechaD=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
+  const data={ fecha:state.fecha, hora:hh+':'+mm, dia:DIA_LABEL[fechaD.getDay()], total:items.length, cumple:items.length-sel.length, nocumple:sel.length, detalle };
   guardarEnServer(data);
 }
 function guardarEnServer(data) {
@@ -747,7 +830,7 @@ function guardarEnServer(data) {
     body: JSON.stringify(data)
   })
   .then(r => { if(!r.ok) throw new Error('Error '+r.status); return r.json(); })
-  .then(() => { mostrarGuardando(false); irA('s-exito'); })
+  .then(() => { mostrarGuardando(false); state.lockedPairs.add(state.fecha+'|'+state.subarea); irA('s-exito'); })
   .catch(err => { mostrarGuardando(false); showToast('Error al guardar: '+err.message); });
 }
 function mostrarGuardando(show) {
@@ -757,7 +840,10 @@ function mostrarGuardando(show) {
 
 // ═══ NUEVO REGISTRO ══════════════════════════════════════════════════════════
 function nuevoRegistro() {
-  state={subarea:null,compSelIdx:[],cumplResults:{},cumplCursor:0,obsText:'',zonaFiltro:'Todos'};
+  // Keep fecha and lockedPairs so locks persist across registrations
+  const prevFecha = state.fecha;
+  const prevLocked = state.lockedPairs;
+  state={subarea:null,compSelIdx:[],cumplResults:{},tipoNC:{},cumplCursor:0,obsText:'',zonaFiltro:'Todos',fecha:prevFecha,lockedPairs:prevLocked};
   irA('s-subarea');
 }
 

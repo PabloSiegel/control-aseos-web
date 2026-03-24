@@ -163,8 +163,11 @@ app.get('/api/dashboard', async (req, res) => {
     });
     const rows  = result.data.values || [];
     const today = todayStr();
+    // Return last 3 days so frontend can detect locked subarea+fecha pairs
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 2);
+    const cutStr = cutoff.getFullYear()+'-'+String(cutoff.getMonth()+1).padStart(2,'0')+'-'+String(cutoff.getDate()).padStart(2,'0');
     const registros = rows
-      .filter(r => r[1] === today)
+      .filter(r => r[1] >= cutStr)
       .map(r => ({
         fecha     : r[1] || '',
         subarea   : r[4] || '',
