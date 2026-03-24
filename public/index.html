@@ -169,7 +169,12 @@ body {
   background: var(--panel); border: 2px solid var(--borde); border-radius: 12px;
   padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.15s;
 }
-.comp-item.selected { border-color: var(--rojo); background: #e8edf7; }
+.comp-item.selected { border-color: #E53935; background: #fff0f0; }
+.comp-item .nc-badge { font-size:11px; font-weight:700; color:#E53935; display:none; margin-left:auto; padding:2px 8px; border-radius:10px; background:#fce8e6; }
+.comp-item.selected .nc-badge { display:block; }
+.obs-input-wrap { padding:6px 12px 10px 48px; margin-top:-8px; }
+.obs-input { width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--borde); border-radius:8px; font-size:14px; background:#fff8f8; }
+.obs-input:focus { outline:none; border-color:#E53935; }
 .comp-check {
   width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--borde);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s;
@@ -333,15 +338,11 @@ body {
   <div class="kpi-grid">
     <div class="kpi-card kpi-total">
       <div class="kpi-value" id="kpi-total">—</div>
-      <div class="kpi-label">Total</div>
+      <div class="kpi-label">Registros hoy</div>
     </div>
-    <div class="kpi-card kpi-cumple">
-      <div class="kpi-value" id="kpi-cumple">—</div>
-      <div class="kpi-label">Cumple</div>
-    </div>
-    <div class="kpi-card kpi-nc">
+    <div class="kpi-card kpi-nc" style="grid-column:span 2">
       <div class="kpi-value" id="kpi-nc">—</div>
-      <div class="kpi-label">No Cumple</div>
+      <div class="kpi-label">No Cumple hoy</div>
     </div>
   </div>
   <button class="btn-nuevo" onclick="irA('s-subarea')">+ NUEVO REGISTRO</button>
@@ -361,12 +362,11 @@ body {
   <div class="zona-filter" id="zona-filter"></div>
   <div class="comp-header">
     <span class="comp-count" id="comp-count"></span>
-    <button class="btn-selall" onclick="selAll()">Seleccionar todo</button>
   </div>
   <div class="comp-list" id="comp-list"></div>
   <div class="btn-iniciar-wrap">
-    <button class="btn-iniciar" id="btn-iniciar" onclick="iniciarCumplimiento()" disabled>
-      INICIAR CUMPLIMIENTO
+    <button class="btn-iniciar" id="btn-iniciar" onclick="iniciarCumplimiento()">
+      CONTINUAR →
     </button>
   </div>
 </div>
@@ -401,15 +401,11 @@ body {
   <div class="screen-title">CONFIRMAR REGISTRO</div>
   <div class="confirmar-kpi">
     <div class="confirmar-card">
-      <div class="confirmar-num" style="color:var(--rojo)"  id="conf-total">0</div>
-      <div class="confirmar-lbl">Total</div>
+      <div class="confirmar-num" style="color:var(--azul)"  id="conf-total">0</div>
+      <div class="confirmar-lbl">Componentes</div>
     </div>
     <div class="confirmar-card">
-      <div class="confirmar-num" style="color:var(--verde)" id="conf-cumple">0</div>
-      <div class="confirmar-lbl">Cumple</div>
-    </div>
-    <div class="confirmar-card">
-      <div class="confirmar-num" style="color:#E53935"      id="conf-nc">0</div>
+      <div class="confirmar-num" style="color:#E53935" id="conf-nc">0</div>
       <div class="confirmar-lbl">No Cumple</div>
     </div>
   </div>
@@ -509,12 +505,14 @@ function renderInicio() {
     .then(r => r.json())
     .then(data => {
       const r = data.registros || [];
-      document.getElementById('kpi-total').textContent  = r.length;
-      document.getElementById('kpi-cumple').textContent = r.filter(x=>x.cumple).length;
-      document.getElementById('kpi-nc').textContent     = r.filter(x=>x.nocumple).length;
+      // Agrupar por subarea para contar registros únicos del día
+      const subareas = new Set(r.map(x=>x.subarea)).size;
+      const nc = r.filter(x=>x.nocumple).length;
+      document.getElementById('kpi-total').textContent = subareas || r.length;
+      document.getElementById('kpi-nc').textContent    = nc;
     })
     .catch(() => {
-      ['kpi-total','kpi-cumple','kpi-nc'].forEach(id => document.getElementById(id).textContent = '\u2014');
+      ['kpi-total','kpi-nc'].forEach(id => document.getElementById(id).textContent = '\u2014');
     });
 }
 
@@ -548,7 +546,7 @@ function selSubarea(sub) {
 function renderComponentes() {
   renderSteps(1,'steps-componentes');
   const hoy = aseosDeHoy().filter(a=>a[0]===state.subarea);
-  document.getElementById('comp-title').textContent = 'COMPONENTES \u2014 '+state.subarea.toUpperCase();
+  document.getElementById('comp-title').textContent = 'MARCAR NO CUMPLE \u2014 '+state.subarea.toUpperCase();
   const zonas = ['Todos',...new Set(hoy.map(a=>a[2]))];
   let fh = '';
   zonas.forEach(z => {
@@ -576,23 +574,40 @@ function renderComps() {
   fil.forEach(item => {
     const idx = hoy.indexOf(item);
     const sel = state.compSelIdx.includes(idx);
+    const res = state.cumplResults[idx];
     h += '<div class="comp-item '+(sel?'selected':'')+'" onclick="toggleComp('+idx+')">'
-       + '<div class="comp-check"><span class="comp-check-icon">\u2713</span></div>'
-       + '<div class="comp-info"><div class="comp-zona">'+item[2]+'</div><div class="comp-name">'+item[3]+'</div></div></div>';
+       + '<div class="comp-check"><span class="comp-check-icon">\u2717</span></div>'
+       + '<div class="comp-info"><div class="comp-zona">'+item[2]+'</div><div class="comp-name">'+item[3]+'</div></div>'
+       + '<div class="nc-badge">No Cumple</div>'
+       + '</div>';
+    if (sel) {
+      const obsVal = (res && res.obs) ? res.obs.replace(/"/g,'&quot;') : '';
+      h += '<div class="obs-input-wrap"><input class="obs-input" type="text" placeholder="Observaci\u00f3n (opcional)" value="'+obsVal+'" oninput="updateObs('+idx+',this.value)" onclick="event.stopPropagation()"/></div>';
+    }
   });
   document.getElementById('comp-list').innerHTML = h;
-  document.getElementById('comp-count').textContent = state.compSelIdx.length+' seleccionados de '+hoy.length;
-  document.getElementById('btn-iniciar').disabled = state.compSelIdx.length===0;
+  const nc = state.compSelIdx.length;
+  document.getElementById('comp-count').textContent = nc > 0
+    ? '\u26a0\ufe0f '+nc+' no cumplimiento'+(nc>1?'s':'')+' marcado'+(nc>1?'s':'')
+    : '\u2705 Toca un componente para marcarlo como No Cumple';
+}
+function updateObs(idx, val) {
+  if (!state.cumplResults[idx]) state.cumplResults[idx] = {estado:'No Cumple', obs:''};
+  state.cumplResults[idx].obs = val;
 }
 function toggleComp(idx) {
-  const i=state.compSelIdx.indexOf(idx);
-  if(i>=0) state.compSelIdx.splice(i,1); else state.compSelIdx.push(idx);
+  const i = state.compSelIdx.indexOf(idx);
+  if (i >= 0) {
+    state.compSelIdx.splice(i, 1);
+    delete state.cumplResults[idx];
+  } else {
+    state.compSelIdx.push(idx);
+    state.cumplResults[idx] = {estado:'No Cumple', obs:''};
+  }
   renderComps();
 }
 function iniciarCumplimiento() {
-  if(!state.compSelIdx.length) return;
-  state.cumplCursor=0; state.cumplResults={}; state.obsText='';
-  irA('s-cumplimiento');
+  irA('s-confirmar');
 }
 
 // ═══ S-CUMPLIMIENTO ══════════════════════════════════════════════════════════
@@ -680,23 +695,26 @@ function renderConfirmar() {
   renderSteps(3,'steps-confirmar');
   const hoy=aseosDeHoy().filter(a=>a[0]===state.subarea);
   const sel=state.compSelIdx.slice().sort((a,b)=>a-b);
-  let cumple=0,nc=0,h='';
+  let nc=0, h='';
   sel.forEach(idx=>{
     const item=hoy[idx]; const res=state.cumplResults[idx];
     if(!item||!res) return;
-    const ok=res.estado==='Cumple';
-    if(ok) cumple++; else nc++;
-    h+='<div class="confirmar-item '+(ok?'cumple':'nocumple')+'">'
+    nc++;
+    h+='<div class="confirmar-item nocumple">'
       +'<div class="confirmar-item-info">'
       +'<div class="confirmar-item-zona">'+item[2]+'</div>'
       +'<div class="confirmar-item-comp">'+item[3]+'</div>'
       +(res.obs?'<div class="confirmar-item-obs">&ldquo;'+res.obs+'&rdquo;</div>':'')
       +'</div>'
-      +'<div class="badge '+(ok?'badge-cumple':'badge-nc')+'">'+(ok?'Cumple':'No Cumple')+'</div>'
+      +'<div class="badge badge-nc">No Cumple</div>'
       +'</div>';
   });
-  document.getElementById('conf-total').textContent=sel.length;
-  document.getElementById('conf-cumple').textContent=cumple;
+  if (nc===0) {
+    h='<div style="text-align:center;padding:32px 16px;color:var(--verde);font-size:15px">'
+     +'<div style="font-size:3rem;margin-bottom:8px">\u2705</div>'
+     +'<strong>Sin No Cumplimientos</strong><br>Todo cumple en '+state.subarea+'</div>';
+  }
+  document.getElementById('conf-total').textContent=hoy.length;
   document.getElementById('conf-nc').textContent=nc;
   document.getElementById('confirmar-list').innerHTML=h;
 }
@@ -705,16 +723,20 @@ function renderConfirmar() {
 function guardar() {
   const hoy=aseosDeHoy().filter(a=>a[0]===state.subarea);
   const sel=state.compSelIdx.slice().sort((a,b)=>a-b);
+  // Si no hay no-cumplimientos, registrar igual con 0 no cumple para historial
   const detalle=sel.map(idx=>{
     const item=hoy[idx]; const res=state.cumplResults[idx];
-    return { subarea:item[0], zona:item[2], componente:item[3], estado:res?res.estado:'Cumple', obs:res?(res.obs||''):'' };
+    return { subarea:item[0], zona:item[2], componente:item[3], estado:'No Cumple', obs:res?(res.obs||''):'' };
   });
   const now=new Date();
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
-  const cumple=detalle.filter(d=>d.estado==='Cumple').length;
-  const nocumple=detalle.filter(d=>d.estado==='No Cumple').length;
-  const data={ fecha:todayStr(), hora:hh+':'+mm, dia:DIA_LABEL[now.getDay()], total:detalle.length, cumple, nocumple, detalle };
+  const data={ fecha:todayStr(), hora:hh+':'+mm, dia:DIA_LABEL[now.getDay()], total:hoy.length, cumple:hoy.length-sel.length, nocumple:sel.length, detalle };
+  if (detalle.length===0) {
+    // Nada que guardar, ir directo a éxito
+    irA('s-exito');
+    return;
+  }
   guardarEnServer(data);
 }
 function guardarEnServer(data) {
