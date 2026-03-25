@@ -181,6 +181,9 @@ body {
   padding: 14px 16px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.15s;
 }
 .comp-item.selected { border-color: #E53935; background: #fff0f0; }
+.comp-item.comp-locked { opacity: 0.42; cursor: not-allowed; background: var(--panel2); }
+.comp-item.comp-locked .comp-check { visibility: hidden; }
+.prog-badge { font-size:12px; color:var(--naranja); background:#fff3e0; border-radius:10px; padding:2px 8px; font-weight:700; }
 .comp-item .nc-badge { font-size:11px; font-weight:700; color:#E53935; display:none; margin-left:auto; padding:2px 8px; border-radius:10px; background:#fce8e6; }
 .comp-item.selected .nc-badge { display:block; }
 .obs-input-wrap { padding:6px 12px 10px 48px; margin-top:-8px; }
@@ -550,7 +553,7 @@ function renderInicio() {
     .then(data => {
       const r = data.registros || [];
       // Build locked pairs
-      state.lockedPairs = new Set(r.map(x=>x.fecha+'|'+x.subarea));
+      state.lockedPairs = new Set(r.map(x=>x.fecha+'|'+x.subarea+'|'+x.zona+'|'+x.componente));
       // Today only for KPIs
       const todayRecs = r.filter(x=>x.fecha===today);
       // Subareas revisadas hoy (con al menos 1 registro)
@@ -599,19 +602,22 @@ function renderSubareas() {
     const cnt   = items.filter(a=>a[0]===sub).length;
     const color = colors[sub]||'#888';
     const icon  = icons[sub]||'\ud83c\udfed';
-    const locked = state.lockedPairs.has(state.fecha+'|'+sub);
-    if (locked) {
+    const subItems = items.filter(a=>a[0]===sub);
+    const lockedCount = subItems.filter(a=>state.lockedPairs.has(state.fecha+'|'+sub+'|'+a[2]+'|'+a[3])).length;
+    const allDone = lockedCount === cnt && cnt > 0;
+    if (allDone) {
       h += '<div class="subarea-card locked" style="border-left:5px solid '+color+'">'
          + '<div class="subarea-icon">'+icon+'</div>'
          + '<div class="subarea-info"><div class="subarea-name" style="color:'+color+'">'+sub+'</div>'
          + '<div class="subarea-count">'+cnt+' componentes</div></div>'
-         + '<div class="lock-badge">\u2713 Revisado</div></div>';
+         + '<div class="lock-badge">\u2713 Completado</div></div>';
     } else {
+      const badge = lockedCount > 0 ? '<div class="prog-badge">'+lockedCount+'/'+cnt+' revisados</div>' : '<div class="subarea-arrow">&rsaquo;</div>';
       h += '<div class="subarea-card" onclick="selSubarea(\''+sub+'\')" style="border-left:5px solid '+color+'">'
          + '<div class="subarea-icon">'+icon+'</div>'
          + '<div class="subarea-info"><div class="subarea-name" style="color:'+color+'">'+sub+'</div>'
          + '<div class="subarea-count">'+cnt+' componentes</div></div>'
-         + '<div class="subarea-arrow">&rsaquo;</div></div>';
+         + badge+'</div>';
     }
   });
   if (!h) h = '<div style="text-align:center;padding:40px;color:var(--gris)">No hay aseos programados para este día.</div>';
@@ -622,7 +628,6 @@ function selFecha(f) {
   renderSubareas();
 }
 function selSubarea(sub) {
-  if (state.lockedPairs.has(state.fecha+'|'+sub)) return;
   state.subarea=sub; state.compSelIdx=[]; state.cumplResults={}; state.tipoNC={}; state.cumplCursor=0; state.obsText=''; state.zonaFiltro='Todos';
   irA('s-componentes');
 }
@@ -659,8 +664,17 @@ function renderComps() {
   let h = '';
   fil.forEach(item => {
     const idx = items.indexOf(item);
-    const sel = state.compSelIdx.includes(idx);
+    const compLocked = state.lockedPairs.has(state.fecha+'|'+state.subarea+'|'+item[2]+'|'+item[3]);
+    const sel = !compLocked && state.compSelIdx.includes(idx);
     const res = state.cumplResults[idx];
+    if (compLocked) {
+      h += '<div class="comp-item comp-locked">'
+         + '<div class="comp-check"></div>'
+         + '<div class="comp-info"><div class="comp-zona">'+item[2]+'</div><div class="comp-name">'+item[3]+'</div></div>'
+         + '<div class="lock-badge">\u2713</div>'
+         + '</div>';
+      return;
+    }
     h += '<div class="comp-item '+(sel?'selected':'')+'" onclick="toggleComp('+idx+')">'
        + '<div class="comp-check"><span class="comp-check-icon">\u2717</span></div>'
        + '<div class="comp-info"><div class="comp-zona">'+item[2]+'</div><div class="comp-name">'+item[3]+'</div></div>'
@@ -693,6 +707,9 @@ function updateTipo(idx, val) {
   state.tipoNC[idx] = val;
 }
 function toggleComp(idx) {
+  const items = aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
+  const item = items[idx];
+  if (item && state.lockedPairs.has(state.fecha+'|'+state.subarea+'|'+item[2]+'|'+item[3])) return;
   const i = state.compSelIdx.indexOf(idx);
   if (i >= 0) {
     state.compSelIdx.splice(i, 1);
@@ -823,27 +840,28 @@ function renderConfirmar() {
 // ═══ GUARDAR ═════════════════════════════════════════════════════════════════
 function guardar() {
   const items=aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
-  const sel=state.compSelIdx.slice().sort((a,b)=>a-b);
-  const detalle=sel.map(idx=>{
-    const item=items[idx]; const res=state.cumplResults[idx];
-    const tipo=state.tipoNC[idx]||'';
-    const obsCompleta=tipo?(tipo+(res&&res.obs?': '+res.obs:'')):(res?(res.obs||''):'');
-    return { subarea:item[0], zona:item[2], componente:item[3], estado:'No Cumple', obs:obsCompleta };
+  // Solo guardar componentes que no estén ya registrados
+  const toSave=items.filter(item=>!state.lockedPairs.has(state.fecha+'|'+state.subarea+'|'+item[2]+'|'+item[3]));
+  if (toSave.length===0) { showToast('No hay componentes pendientes'); return; }
+  const sel=state.compSelIdx.slice();
+  const detalle=toSave.map(item=>{
+    const origIdx=items.indexOf(item);
+    const isNC=sel.includes(origIdx);
+    const res=state.cumplResults[origIdx];
+    const tipo=state.tipoNC[origIdx]||'';
+    const obs=isNC?(tipo?(tipo+(res&&res.obs?': '+res.obs:'')):(res?(res.obs||''):'')):'';
+    return { subarea:item[0], zona:item[2], componente:item[3], estado:isNC?'No Cumple':'Cumple', obs };
   });
-  // Si no hay NC, guardar fila "Conforme" para marcar la subarea como revisada
-  if (detalle.length===0) {
-    detalle.push({ subarea:state.subarea, zona:'', componente:'(Sin no cumplimientos)', estado:'Conforme', obs:'' });
-  }
   const now=new Date();
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
-  // Use the fecha from state (may be today, yesterday or day-before)
   const p=state.fecha.split('-');
   const fechaD=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
-  const data={ fecha:state.fecha, hora:hh+':'+mm, dia:DIA_LABEL[fechaD.getDay()], total:items.length, cumple:items.length-sel.length, nocumple:sel.length, detalle };
-  guardarEnServer(data);
+  const ncCount=sel.filter(i=>toSave.some(item=>items.indexOf(item)===i)).length;
+  const data={ fecha:state.fecha, hora:hh+':'+mm, dia:DIA_LABEL[fechaD.getDay()], total:toSave.length, cumple:toSave.length-ncCount, nocumple:ncCount, detalle };
+  guardarEnServer(data, toSave);
 }
-function guardarEnServer(data) {
+function guardarEnServer(data, savedItems) {
   mostrarGuardando(true);
   fetch('/api/registros', {
     method: 'POST',
@@ -851,7 +869,11 @@ function guardarEnServer(data) {
     body: JSON.stringify(data)
   })
   .then(r => { if(!r.ok) throw new Error('Error '+r.status); return r.json(); })
-  .then(() => { mostrarGuardando(false); state.lockedPairs.add(state.fecha+'|'+state.subarea); irA('s-exito'); })
+  .then(() => {
+    mostrarGuardando(false);
+    (savedItems||[]).forEach(item=>state.lockedPairs.add(state.fecha+'|'+state.subarea+'|'+item[2]+'|'+item[3]));
+    irA('s-exito');
+  })
   .catch(err => { mostrarGuardando(false); showToast('Error al guardar: '+err.message); });
 }
 function mostrarGuardando(show) {
