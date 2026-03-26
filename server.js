@@ -48,7 +48,7 @@ function todayStr() {
 }
 
 function hexColor(estado) {
-  return estado === 'Cumple' ? '#d9ead3' : '#fce8e6';
+  return '#fce8e6'; // Solo se guardan NC → siempre rojo
 }
 
 async function ensureHeaders(sheets, spreadsheetId) {
@@ -64,7 +64,7 @@ async function ensureHeaders(sheets, spreadsheetId) {
         range: `${HOJA_REGISTROS}!A1`,
         valueInputOption: 'RAW',
         requestBody: {
-          values: [['Timestamp','Fecha','Hora','Día','Subárea','Zona/Máquina','Componente','Estado','Observación']],
+          values: [['Timestamp','Fecha','Hora','Día','Subárea','Zona/Máquina','Componente','No Cumple','Observación']],
         },
       });
     }
@@ -74,36 +74,33 @@ async function ensureHeaders(sheets, spreadsheetId) {
 }
 
 async function colorearUltimasFilas(sheets, spreadsheetId, sheetId, n, rows, firstEstadoCol) {
-  const requests = rows.map((row, i) => {
-    const bg = row[7] === 'Cumple'
-      ? { red: 0.851, green: 0.918, blue: 0.827 }
-      : { red: 0.988, green: 0.910, blue: 0.902 };
-    return {
-      repeatCell: {
-        range: {
-          sheetId,
-          startRowIndex: firstEstadoCol + i,
-          endRowIndex:   firstEstadoCol + i + 1,
-          startColumnIndex: 0,
-          endColumnIndex: 9,
-        },
-        cell: { userEnteredFormat: { backgroundColor: bg } },
-        fields: 'userEnteredFormat.backgroundColor',
+  // Solo se guardan NC, siempre fondo rojo claro
+  const bg = { red: 0.988, green: 0.910, blue: 0.902 };
+  const requests = rows.map((_, i) => ({
+    repeatCell: {
+      range: {
+        sheetId,
+        startRowIndex: firstEstadoCol + i,
+        endRowIndex:   firstEstadoCol + i + 1,
+        startColumnIndex: 0,
+        endColumnIndex: 9,
       },
-    };
-  });
+      cell: { userEnteredFormat: { backgroundColor: bg } },
+      fields: 'userEnteredFormat.backgroundColor',
+    },
+  }));
   if (requests.length) {
     await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
   }
 }
 
 async function actualizarResumen(sheets, spreadsheetId, data) {
-  // Read existing Resumen
+  // Solo se resumen No Cumple. Read existing Resumen
   let existing = [];
   try {
     const res = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${HOJA_RESUMEN}!A2:F`,
+      range: `${HOJA_RESUMEN}!A2:E`,
     });
     existing = res.data.values || [];
   } catch {
@@ -113,26 +110,26 @@ async function actualizarResumen(sheets, spreadsheetId, data) {
   const mes = data.fecha.substring(0, 7); // 'yyyy-MM'
   const map = {};
   existing.forEach(r => {
-    const key = `${r[0]}|${r[1]}`;
-    map[key] = { mes: r[0], subarea: r[1], total: Number(r[2]||0), cumple: Number(r[3]||0), nocumple: Number(r[4]||0) };
+    const key = `${r[0]}|${r[1]}|${r[2]}`;
+    map[key] = { mes: r[0], subarea: r[1], sector: r[2]||'', nocumple: Number(r[3]||0) };
   });
 
   data.detalle.forEach(d => {
-    const key = `${mes}|${d.subarea}`;
-    if (!map[key]) map[key] = { mes, subarea: d.subarea, total: 0, cumple: 0, nocumple: 0 };
-    map[key].total++;
-    if (d.estado === 'Cumple') map[key].cumple++;
-    else                        map[key].nocumple++;
+    if (d.estado !== 'No Cumple') return; // Solo NC
+    const sector = d.sector || '';
+    const key = `${mes}|${d.subarea}|${sector}`;
+    if (!map[key]) map[key] = { mes, subarea: d.subarea, sector, nocumple: 0 };
+    map[key].nocumple++;
   });
 
   const now  = new Date().toISOString();
-  const rows = Object.values(map).map(r => {
-    const pct = r.total > 0 ? ((r.cumple / r.total) * 100).toFixed(1) + '%' : '0%';
-    return [r.mes, r.subarea, r.total, r.cumple, r.nocumple, pct, now];
-  });
+  const rows = Object.values(map)
+    .filter(r => r.nocumple > 0)
+    .sort((a,b) => a.mes.localeCompare(b.mes) || a.subarea.localeCompare(b.subarea))
+    .map(r => [r.mes, r.subarea, r.sector, r.nocumple, now]);
 
   // Clear and rewrite
-  await sheets.spreadsheets.values.clear({ spreadsheetId, range: `${HOJA_RESUMEN}!A2:G` });
+  await sheets.spreadsheets.values.clear({ spreadsheetId, range: `${HOJA_RESUMEN}!A2:E` });
   if (rows.length) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
@@ -140,7 +137,7 @@ async function actualizarResumen(sheets, spreadsheetId, data) {
       valueInputOption: 'RAW',
       requestBody: {
         values: [
-          ['Mes','Subárea','Total','Cumple','No Cumple','%Cumple','Última actualización'],
+          ['Mes','Subárea','Sector','No Cumple','Última actualización'],
           ...rows,
         ],
       },
@@ -195,39 +192,44 @@ app.post('/api/registros', async (req, res) => {
 
     await ensureHeaders(sheets, SHEET_ID);
 
-    const now       = new Date().toISOString();
-    const newRows   = data.detalle.map(d => [
+    const now = new Date().toISOString();
+
+    // Solo guardar No Cumple en Registros
+    const ncDetalle = data.detalle.filter(d => d.estado === 'No Cumple');
+    const newRows   = ncDetalle.map(d => [
       now, data.fecha, data.hora, data.dia,
-      d.subarea, d.zona, d.componente, d.estado, d.obs || '',
+      d.subarea, d.zona, d.componente, 'No Cumple', d.obs || '',
     ]);
 
-    // Append rows
-    await sheets.spreadsheets.values.append({
-      spreadsheetId: SHEET_ID,
-      range: `${HOJA_REGISTROS}!A1`,
-      valueInputOption: 'RAW',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: newRows },
-    });
+    if (newRows.length > 0) {
+      // Append rows
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SHEET_ID,
+        range: `${HOJA_REGISTROS}!A1`,
+        valueInputOption: 'RAW',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: newRows },
+      });
 
-    // Color rows (get current row count first for sheetId)
-    try {
-      const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
-      const sheet = meta.data.sheets.find(s => s.properties.title === HOJA_REGISTROS);
-      if (sheet) {
-        const total = await sheets.spreadsheets.values.get({
-          spreadsheetId: SHEET_ID,
-          range: `${HOJA_REGISTROS}!A:A`,
-        });
-        const rowCount   = (total.data.values || []).length;
-        const firstNewRow = rowCount - newRows.length;
-        await colorearUltimasFilas(sheets, SHEET_ID, sheet.properties.sheetId, newRows.length, newRows, firstNewRow);
+      // Color rows (get current row count first for sheetId)
+      try {
+        const meta = await sheets.spreadsheets.get({ spreadsheetId: SHEET_ID });
+        const sheet = meta.data.sheets.find(s => s.properties.title === HOJA_REGISTROS);
+        if (sheet) {
+          const total = await sheets.spreadsheets.values.get({
+            spreadsheetId: SHEET_ID,
+            range: `${HOJA_REGISTROS}!A:A`,
+          });
+          const rowCount    = (total.data.values || []).length;
+          const firstNewRow = rowCount - newRows.length;
+          await colorearUltimasFilas(sheets, SHEET_ID, sheet.properties.sheetId, newRows.length, newRows, firstNewRow);
+        }
+      } catch (colorErr) {
+        console.warn('colorear error (no crítico):', colorErr.message);
       }
-    } catch (colorErr) {
-      console.warn('colorear error (no crítico):', colorErr.message);
     }
 
-    // Update Resumen
+    // Actualizar Resumen (solo con NC, pero pasamos data completa para contexto)
     await actualizarResumen(sheets, SHEET_ID, data);
 
     res.json({ ok: true, rows: newRows.length });
