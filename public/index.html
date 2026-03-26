@@ -838,28 +838,36 @@ function renderConfirmar() {
 }
 
 // ═══ GUARDAR ═════════════════════════════════════════════════════════════════
+function lk(item){ return state.fecha+'|'+state.subarea+'|'+item[2]+'|'+item[3]; }
 function guardar() {
   const items=aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
-  // Solo guardar componentes que no estén ya registrados
-  const toSave=items.filter(item=>!state.lockedPairs.has(state.fecha+'|'+state.subarea+'|'+item[2]+'|'+item[3]));
-  if (toSave.length===0) { showToast('No hay componentes pendientes'); return; }
-  const sel=state.compSelIdx.slice();
-  const detalle=toSave.map(item=>{
-    const origIdx=items.indexOf(item);
-    const isNC=sel.includes(origIdx);
-    const res=state.cumplResults[origIdx];
-    const tipo=state.tipoNC[origIdx]||'';
-    const obs=isNC?(tipo?(tipo+(res&&res.obs?': '+res.obs:'')):(res?(res.obs||''):'')):'';
-    return { subarea:item[0], zona:item[2], componente:item[3], estado:isNC?'No Cumple':'Cumple', obs };
-  });
+  const sel=state.compSelIdx.slice().sort((a,b)=>a-b);
   const now=new Date();
   const hh=String(now.getHours()).padStart(2,'0');
   const mm=String(now.getMinutes()).padStart(2,'0');
   const p=state.fecha.split('-');
   const fechaD=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2]));
-  const ncCount=sel.filter(i=>toSave.some(item=>items.indexOf(item)===i)).length;
-  const data={ fecha:state.fecha, hora:hh+':'+mm, dia:DIA_LABEL[fechaD.getDay()], total:toSave.length, cumple:toSave.length-ncCount, nocumple:ncCount, detalle };
-  guardarEnServer(data, toSave);
+  const base={ fecha:state.fecha, hora:hh+':'+mm, dia:DIA_LABEL[fechaD.getDay()] };
+
+  if (sel.length > 0) {
+    // Hay NC seleccionados: solo guardar/lockear esos
+    const ncItems=sel.map(i=>items[i]).filter(item=>item&&!state.lockedPairs.has(lk(item)));
+    if (ncItems.length===0){ showToast('Esos NC ya fueron registrados'); return; }
+    const detalle=ncItems.map(item=>{
+      const idx=items.indexOf(item);
+      const res=state.cumplResults[idx]; const tipo=state.tipoNC[idx]||'';
+      const obs=tipo?(tipo+(res&&res.obs?': '+res.obs:'')):(res?(res.obs||''):'');
+      return { subarea:item[0], zona:item[2], componente:item[3], estado:'No Cumple', obs };
+    });
+    guardarEnServer({...base, total:ncItems.length, cumple:0, nocumple:ncItems.length, detalle}, ncItems);
+  } else {
+    // Sin NC: marcar como Cumple los componentes del filtro actual (zona o todos)
+    const scope=state.zonaFiltro==='Todos'?items:items.filter(a=>a[2]===state.zonaFiltro);
+    const toSave=scope.filter(item=>!state.lockedPairs.has(lk(item)));
+    if (toSave.length===0){ showToast('No hay componentes pendientes'); return; }
+    const detalle=toSave.map(item=>({ subarea:item[0], zona:item[2], componente:item[3], estado:'Cumple', obs:'' }));
+    guardarEnServer({...base, total:toSave.length, cumple:toSave.length, nocumple:0, detalle}, toSave);
+  }
 }
 function guardarEnServer(data, savedItems) {
   mostrarGuardando(true);
