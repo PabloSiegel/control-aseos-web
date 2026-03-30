@@ -56,7 +56,7 @@ async function ensureHeaders(sheets, spreadsheetId) {
   try {
     const reg = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${HOJA_REGISTROS}!A1:I1`,
+      range: `${HOJA_REGISTROS}!A1:J1`,
     });
     if (!reg.data.values || !reg.data.values[0]) {
       await sheets.spreadsheets.values.update({
@@ -64,7 +64,7 @@ async function ensureHeaders(sheets, spreadsheetId) {
         range: `${HOJA_REGISTROS}!A1`,
         valueInputOption: 'RAW',
         requestBody: {
-          values: [['Timestamp','Fecha','Hora','Día','Subárea','Zona/Máquina','Componente','No Cumple','Observación']],
+          values: [['Timestamp','Fecha','Hora','Día','Subárea','Sector','Zona/Máquina','Componente','No Cumple','Observación']],
         },
       });
     }
@@ -83,7 +83,7 @@ async function colorearUltimasFilas(sheets, spreadsheetId, sheetId, n, rows, fir
         startRowIndex: firstEstadoCol + i,
         endRowIndex:   firstEstadoCol + i + 1,
         startColumnIndex: 0,
-        endColumnIndex: 9,
+        endColumnIndex: 10,
       },
       cell: { userEnteredFormat: { backgroundColor: bg } },
       fields: 'userEnteredFormat.backgroundColor',
@@ -156,7 +156,7 @@ app.get('/api/dashboard', async (req, res) => {
     const sheets = await getSheets();
     const result = await sheets.spreadsheets.values.get({
       spreadsheetId: SHEET_ID,
-      range: `${HOJA_REGISTROS}!A2:I`,
+      range: `${HOJA_REGISTROS}!A2:J`,
     });
     const rows  = result.data.values || [];
     const today = todayStr();
@@ -168,11 +168,11 @@ app.get('/api/dashboard', async (req, res) => {
       .map(r => ({
         fecha     : r[1] || '',
         subarea   : r[4] || '',
-        zona      : r[5] || '',
-        componente: r[6] || '',
-        estado    : r[7] || '',
-        cumple    : r[7] === 'Cumple'    ? 1 : 0,
-        nocumple  : r[7] === 'No Cumple' ? 1 : 0,
+        zona      : r[6] || '',
+        componente: r[7] || '',
+        estado    : r[8] || '',
+        cumple    : r[8] === 'Cumple'    ? 1 : 0,
+        nocumple  : r[8] === 'No Cumple' ? 1 : 0,
       }));
     res.json({ registros });
   } catch (err) {
@@ -198,7 +198,7 @@ app.post('/api/registros', async (req, res) => {
     const ncDetalle = data.detalle.filter(d => d.estado === 'No Cumple');
     const newRows   = ncDetalle.map(d => [
       now, data.fecha, data.hora, data.dia,
-      d.subarea, d.zona, d.componente, 'No Cumple', d.obs || '',
+      d.subarea, d.sector||'', d.zona, d.componente, 'No Cumple', d.obs || '',
     ]);
 
     if (newRows.length > 0) {

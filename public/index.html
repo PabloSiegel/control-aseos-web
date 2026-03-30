@@ -907,7 +907,7 @@ function guardar() {
       const idx=items.indexOf(item);
       const res=state.cumplResults[idx]; const tipo=state.tipoNC[idx]||'';
       const obs=tipo?(tipo+(res&&res.obs?': '+res.obs:'')):(res?(res.obs||''):'');
-      return { subarea:item[0], zona:item[2], componente:item[3], estado:'No Cumple', obs };
+      return { subarea:item[0], sector:item[1], zona:item[2], componente:item[3], estado:'No Cumple', obs };
     });
     guardarEnServer({...base, total:ncItems.length, cumple:0, nocumple:ncItems.length, detalle}, ncItems);
   } else {
@@ -915,7 +915,7 @@ function guardar() {
     const scope=state.zonaFiltro==='Todos'?items:items.filter(a=>a[2]===state.zonaFiltro);
     const toSave=scope.filter(item=>!state.lockedPairs.has(lk(item)));
     if (toSave.length===0){ showToast('No hay componentes pendientes'); return; }
-    const detalle=toSave.map(item=>({ subarea:item[0], zona:item[2], componente:item[3], estado:'Cumple', obs:'' }));
+    const detalle=toSave.map(item=>({ subarea:item[0], sector:item[1], zona:item[2], componente:item[3], estado:'Cumple', obs:'' }));
     guardarEnServer({...base, total:toSave.length, cumple:toSave.length, nocumple:0, detalle}, toSave);
   }
 }
