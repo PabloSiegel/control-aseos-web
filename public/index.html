@@ -762,7 +762,6 @@ function updateTipo(idx, val) {
 }
 function updateAccion(idx, val) {
   state.accionNC[idx] = val;
-  renderComps(); // re-render to update border color
 }
 function toggleComp(idx) {
   const items = aseosParaFecha(state.fecha).filter(a=>a[0]===state.subarea);
