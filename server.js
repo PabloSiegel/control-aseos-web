@@ -7,7 +7,6 @@
 const express      = require('express');
 const cors         = require('cors');
 const path         = require('path');
-const nodemailer   = require('nodemailer');
 const { google }   = require('googleapis');
 
 const app  = express();
@@ -242,14 +241,22 @@ app.post('/api/registros', async (req, res) => {
 
 // ── Email ───────────────────────────────────────────────────────────────────
 
-function getTransporter() {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
+async function sendViaResend({ to, subject, html }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error('Falta variable de entorno RESEND_API_KEY');
+  const resp = await fetch('https://api.resend.com/emails', {
+    method : 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body   : JSON.stringify({
+      from   : 'Control de Aseos Agrosuper <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
+    }),
   });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.message || JSON.stringify(data));
+  return data;
 }
 
 const DESTINATARIOS = [
@@ -413,13 +420,7 @@ app.get('/api/send-report', async (req, res) => {
     const subject = `🧹 Reporte de Hallazgos — ${fechaLarga.charAt(0).toUpperCase() + fechaLarga.slice(1)}`;
     const to      = req.query.to ? [req.query.to] : DESTINATARIOS;
 
-    const transporter = getTransporter();
-    await transporter.sendMail({
-      from   : `"Control de Aseos Agrosuper" <${process.env.EMAIL_USER}>`,
-      to     : to.join(', '),
-      subject,
-      html,
-    });
+    await sendViaResend({ to, subject, html });
 
     console.log(`Reporte enviado para fecha ${fecha} → ${to.join(', ')}`);
     res.json({ ok: true, fecha, hallazgos: hallazgos.length, destinatarios: to });
