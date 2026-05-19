@@ -651,7 +651,22 @@ function selSubarea(sub) {
 }
 
 // ═══ S-SECTOR ════════════════════════════════════════════════════════════════
-const SECTOR_ICONS = {'Linea':'\ud83c\udfed','IQF envasado':'\u2744\ufe0f','Palletizado':'\ud83d\udce6'};
+const SECTOR_ICONS = {
+  'Linea':'\u2699\ufe0f',
+  'IQF envasado':'\u2744\ufe0f',
+  'Palletizado':'\ud83d\udce6',
+  'Ba\u00f1os y vestidores':'\ud83d\udebf',
+  'Bodega':'\ud83d\udce6',
+  'Bodega de insumos':'\ud83d\uddc4\ufe0f',
+  'C\u00e1mara de ecualizado':'\u2744\ufe0f',
+  'Empaque':'\ud83d\udcec',
+  'Filtro':'\ud83d\udeb0',
+  'Freidora':'\ud83c\udf73',
+  'Horno':'\ud83d\udd25',
+  'Pasillo interno':'\ud83d\udeb6',
+  'Preparaci\u00f3n de masas':'\ud83d\udd04',
+  'Sala general':'\ud83c\udfe2',
+};
 const SUBAREA_COLORS = {'Hamburguesas':'#D01030','Empanizado':'#FF6B35','Cocidos':'#0080FF'};
 function renderSectores() {
   renderSteps(1,'steps-sector');
