@@ -388,8 +388,8 @@ function buildEmailHtml(fecha, hallazgos) {
  */
 app.get('/api/send-report', async (req, res) => {
   try {
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      return res.status(500).json({ error: 'Faltan EMAIL_USER y EMAIL_PASS en variables de entorno.' });
+    if (!process.env.RESEND_API_KEY) {
+      return res.status(500).json({ error: 'Falta RESEND_API_KEY en variables de entorno.' });
     }
 
     const sheets = await getSheets();
